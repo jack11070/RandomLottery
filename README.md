@@ -57,8 +57,11 @@
 ## 📸 效果預覽 (請在此處添加截圖或 GIF 動畫)
 
 *   **主介面截圖**
+   <img width="3187" height="1728" alt="image" src="https://github.com/user-attachments/assets/5f2b928b-fb69-422c-ba0d-c7d40bacf717" />
 *   **分組抽籤結果截圖**
-*   **直接抽籤結果（含五彩紙屑動畫）GIF**
+   <img width="3187" height="1728" alt="image" src="https://github.com/user-attachments/assets/72fbcaba-a015-4abd-a6a6-ad4ddf620e18" />
+*   **直接抽籤結果**
+   <img width="3187" height="1728" alt="image" src="https://github.com/user-attachments/assets/2730ac39-d0d5-4003-a662-73d45aaa5562" />
 
 ## 🛠️ 使用技術
 
