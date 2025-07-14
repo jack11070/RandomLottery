@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Lottery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .result-card {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .winner-animation {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+            animation: winner-pop 0.5s ease-in-out;
+        }
+        @keyframes winner-pop {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">隨機抽籤</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="fileInput" class="form-label">上傳名單 (txt檔, 一行一名稱)</label>
+                    <input class="form-control" type="file" id="fileInput" accept=".txt">
+                </div>
+
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="group-tab" data-bs-toggle="tab" data-bs-target="#group" type="button" role="tab" aria-controls="group" aria-selected="true">分組抽籤</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="direct-tab" data-bs-toggle="tab" data-bs-target="#direct" type="button" role="tab" aria-controls="direct" aria-selected="false">直接抽籤</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="group" role="tabpanel" aria-labelledby="group-tab">
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label for="groupSize" class="form-label">每組人數</label>
+                                <input type="number" class="form-control" id="groupSize" min="1" value="2">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="groupCount" class="form-label">總共幾組</label>
+                                <input type="number" class="form-control" id="groupCount" min="1" value="1">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mt-3" id="startGroupLottery">開始分組</button>
+                    </div>
+                    <div class="tab-pane fade" id="direct" role="tabpanel" aria-labelledby="direct-tab">
+                        <div class="mt-3">
+                            <label for="winnerCount" class="form-label">中籤人數</label>
+                            <input type="number" class="form-control" id="winnerCount" min="1" value="1">
+                        </div>
+                        <button class="btn btn-primary mt-3" id="startDirectLottery">開始抽籤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="mt-4"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        let participants = [];
+
+        document.getElementById('fileInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    participants = e.target.result.split('\n').map(name => name.trim()).filter(name => name);
+                    if (participants.length > 0) {
+                        alert(`成功上傳 ${participants.length} 位參與者`);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function displayAnimatedResult(element, content) {
+            element.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'card result-card';
+            card.innerHTML = content;
+            element.appendChild(card);
+        }
+
+        function launchConfetti() {
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                // since particles fall down, start a bit higher than random
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        document.getElementById('startGroupLottery').addEventListener('click', () => {
+            if (participants.length === 0) {
+                alert('請先上傳名單');
+                return;
+            }
+
+            const groupSize = parseInt(document.getElementById('groupSize').value);
+            const groupCount = parseInt(document.getElementById('groupCount').value);
+
+            if (isNaN(groupSize) || isNaN(groupCount) || groupSize <= 0 || groupCount <= 0) {
+                alert('請輸入有效的分組人數和組數');
+                return;
+            }
+
+            if (participants.length < groupSize * groupCount) {
+                alert('參與者人數不足以分成指定組數');
+                return;
+            }
+
+            const shuffled = shuffleArray([...participants]);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            let content = '<div class="card-body"><div class="row">';
+            for (let i = 0; i < groupCount; i++) {
+                const groupMembers = shuffled.splice(0, groupSize);
+                content += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-header fw-bold">第 ${i + 1} 組</div>
+                            <ul class="list-group list-group-flush">
+                                ${groupMembers.map(member => `<li class="list-group-item">${member}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            content += '</div></div>';
+            displayAnimatedResult(resultDiv, content);
+        });
+
+        document.getElementById('startDirectLottery').addEventListener('click', () => {
+            if (participants.length === 0) {
+                alert('請先上傳名單');
+                return;
+            }
+
+            const winnerCount = parseInt(document.getElementById('winnerCount').value);
+
+            if (isNaN(winnerCount) || winnerCount <= 0) {
+                alert('請輸入有效的中籤人數');
+                return;
+            }
+
+            if (participants.length < winnerCount) {
+                alert('參與者人數不足以抽出指定中籤人數');
+                return;
+            }
+
+            const shuffled = shuffleArray([...participants]);
+            const winners = shuffled.slice(0, winnerCount);
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<div class="text-center winner-animation mb-3">中獎的是...</div>';
+
+            setTimeout(() => {
+                let content = `
+                    <div class="card-body text-center">
+                        <h5 class="card-title">中籤名單</h5>
+                        <ul class="list-group list-group-flush">
+                            ${winners.map(winner => `<li class="list-group-item">${winner}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                displayAnimatedResult(resultDiv, content);
+                launchConfetti();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
